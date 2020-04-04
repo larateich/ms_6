@@ -10,9 +10,12 @@ knitr::opts_chunk$set(echo = F)
 library(janitor)
 library(rvest)
 library(tidyverse)
+library(reprex)
 ```
  Two weeks ago I made a preliminary plot containing all of the games from both men's and women's olympic results that I had scraped and the proportion of those games that had been won in the first game AND in the end. I found a rather high proportion of games, so this week I will focus on making a plot that qualifies this a bit more, with  information from the top 4 teams from olympic games ONLY, since these are the teams that make it to the semifinals and the finals. 
+ 
 ```{r gather from last time}
+library(rvest)
 mens_olympic_url_print<- paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=560&associationId=0&teamNumber=0&drawNumber=0")
 games2<-read_html(mens_olympic_url_print)
 # this time I piped games2 into div and then table to get past the div barrier. 
@@ -144,10 +147,10 @@ get_clean_results<- function(html_list) {
 ```
 ```{r}
 # I added a competition label to women's and men's before binding them together to form one big olympics dataset. 
-womens_olympic_finals<- as.character(c(95:98))
 womens_olympic_results<- get_clean_results(womens_olympic_html) %>% 
   mutate(competition = "olympic_women", 
          team_group = c(rep("pool", 94), rep("finals", 4)))
+
 mens_olympic_results<- mens_test %>% 
   mutate(competition = "olympic_men", 
          team_group = c(rep("pool", 95), rep("finals", 5)))
@@ -190,8 +193,51 @@ olympics <- olympics %>%
 
 ```
 
-```{r loading more tournaments}
+```{r loading 2014 olympics}
+mens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=381&associationId=0&teamNumber=0&drawNumber=0")
+mens_2014_olympic_html<-load_html_list(mens_2014_olympic_url)
+mens_2014_olympic_results<- get_clean_results(mens_2014_olympic_html) %>% 
+  mutate(competition = "olympic_men", 
+         team_group = c(rep("pool", 95), rep("finals", 5)))
+
+womens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=382&associationId=0&teamNumber=0&drawNumber=0")
+womens_2014_olympic_html<-load_html_list(womens_2014_olympic_url)
+womens_2014_olympic_results<- get_clean_results(womens_2014_olympic_html) %>% 
+  mutate(competition = "olympic_women", 
+         team_group = c(rep("pool", 96), rep("finals", 4)))
 
 ```
 
+```{r 2010 and 2006 olympics}
+# this is really as far back as I'm willing to go, just because the sport has
+# changed so much in 10 years and it's become so much more complex. like just
+# looking at the photos of the 2002 games I was overwhelmed with how old
+# fashioned the brooms looked.really so much has changed and I don't want to
+# make my analysis irrelevant.
+
+mens_2010_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=273&associationId=0&teamNumber=0&drawNumber=0")
+mens_2010_olympic_html<-load_html_list(mens_2010_olympic_url)
+mens_2010_olympic_results<- get_clean_results(mens_2010_olympic_html) %>% 
+  mutate(competition = "olympic_men", 
+         team_group = c(rep("pool", 95), rep("finals", 5)))
+
+womens_2010_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=274&associationId=0&teamNumber=0&drawNumber=0")
+womens_2010_olympic_html<-load_html_list(womens_2010_olympic_url)
+womens_2010_olympic_results<- get_clean_results(womens_2010_olympic_html) %>% 
+  mutate(competition = "olympic_women", 
+         team_group = c(rep("pool", 96), rep("finals", 4)))
+
+mens_2006_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=237&associationId=0&teamNumber=0&drawNumber=0")
+mens_2006_olympic_html<-load_html_list(mens_2006_olympic_url)
+mens_2006_olympic_results<- get_clean_results(mens_2006_olympic_html) %>% 
+  mutate(competition = "olympic_men", 
+         team_group = c(rep("pool", 95), rep("finals", 5)))
+
+womens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=382&associationId=0&teamNumber=0&drawNumber=0")
+womens_2014_olympic_html<-load_html_list(mens_2014_olympic_url)
+womens_2014_olympic_results<- get_clean_results(womens_2014_olympic_html) %>% 
+  mutate(competition = "olympic_women", 
+         team_group = c(rep("pool", 96), rep("finals", 4)))
+
+```
 
