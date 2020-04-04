@@ -17,7 +17,7 @@ library(reprex)
 ```{r gather from last time}
 library(rvest)
 mens_olympic_url_print<- paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=560&associationId=0&teamNumber=0&drawNumber=0")
-games2<-read_html(mens_olympic_url_print)
+games2<-read_html(mens_olympic_url_print, encoding = "latin-1")
 # this time I piped games2 into div and then table to get past the div barrier. 
 games_tab2 <- games2 %>% 
   html_nodes("div") %>%
@@ -198,13 +198,17 @@ mens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/Dis
 mens_2014_olympic_html<-load_html_list(mens_2014_olympic_url)
 mens_2014_olympic_results<- get_clean_results(mens_2014_olympic_html) %>% 
   mutate(competition = "olympic_men", 
-         team_group = c(rep("pool", 95), rep("finals", 5)))
+         team_group = c(rep("pool", 95), rep("finals", 5)),
+         x7 = as.character(x7), 
+         x8 = as.character(x8), 
+         year = 2014)
 
 womens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=382&associationId=0&teamNumber=0&drawNumber=0")
 womens_2014_olympic_html<-load_html_list(womens_2014_olympic_url)
 womens_2014_olympic_results<- get_clean_results(womens_2014_olympic_html) %>% 
   mutate(competition = "olympic_women", 
-         team_group = c(rep("pool", 96), rep("finals", 4)))
+         team_group = c(rep("pool", 94), rep("finals", 4)), 
+         year = 2014)
 
 ```
 
@@ -219,25 +223,93 @@ mens_2010_olympic_url<-paste0("https://results.worldcurling.org/Championship/Dis
 mens_2010_olympic_html<-load_html_list(mens_2010_olympic_url)
 mens_2010_olympic_results<- get_clean_results(mens_2010_olympic_html) %>% 
   mutate(competition = "olympic_men", 
-         team_group = c(rep("pool", 95), rep("finals", 5)))
+         team_group = c(rep("pool", 95), rep("finals", 5)),
+         year = 2010)
 
 womens_2010_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=274&associationId=0&teamNumber=0&drawNumber=0")
 womens_2010_olympic_html<-load_html_list(womens_2010_olympic_url)
 womens_2010_olympic_results<- get_clean_results(womens_2010_olympic_html) %>% 
   mutate(competition = "olympic_women", 
-         team_group = c(rep("pool", 96), rep("finals", 4)))
+         team_group = c(rep("pool", 94), rep("finals", 4)), 
+         year = 2010)
 
 mens_2006_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=237&associationId=0&teamNumber=0&drawNumber=0")
 mens_2006_olympic_html<-load_html_list(mens_2006_olympic_url)
 mens_2006_olympic_results<- get_clean_results(mens_2006_olympic_html) %>% 
   mutate(competition = "olympic_men", 
+         team_group = c(rep("pool", 94), rep("finals", 4)), 
+         year = 2006)
+
+womens_2006_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=238&associationId=0&teamNumber=0&drawNumber=0")
+womens_2006_olympic_html<-load_html_list(womens_2006_olympic_url)
+womens_2006_olympic_results<- get_clean_results(womens_2006_olympic_html) %>% 
+  mutate(competition = "olympic_women", 
+         team_group = c(rep("pool", 94), rep("finals", 4)), 
+         year = 2006)
+
+womens_2018_olympic_results<- womens_olympic_results %>% 
+  mutate(year = 2018, 
+         team_group = c(rep("pool", 94), rep("finals", 4)))
+mens_2018_olympic_results<- mens_olympic_results %>% 
+  mutate(year = 2018, 
          team_group = c(rep("pool", 95), rep("finals", 5)))
 
-womens_2014_olympic_url<-paste0("https://results.worldcurling.org/Championship/DisplayResults?tournamentId=382&associationId=0&teamNumber=0&drawNumber=0")
-womens_2014_olympic_html<-load_html_list(mens_2014_olympic_url)
-womens_2014_olympic_results<- get_clean_results(womens_2014_olympic_html) %>% 
-  mutate(competition = "olympic_women", 
-         team_group = c(rep("pool", 96), rep("finals", 4)))
+```
+```{r big boi dataframe, warning  = F}
+all_years_olympics<-
+  bind_rows(
+    womens_2006_olympic_results, 
+    mens_2006_olympic_results, 
+    womens_2010_olympic_results, 
+    mens_2010_olympic_results, 
+    womens_2014_olympic_results,
+    mens_2014_olympic_results,
+    womens_2018_olympic_results,
+    mens_2018_olympic_results
+  )
 
+#repeating the analysis I had done for 2018 olympics only! 
+
+all_years_olympics<- all_years_olympics %>% 
+    rename(country= draw_number_1_2, 
+         hammer = draw_number_1_3, 
+         end_score = total) %>% 
+  mutate(x7 = as.numeric(x7), 
+         x8 = as.numeric(x8), 
+         x9 = as.numeric(x9), 
+         x10 = as.numeric(x10),
+         end_score = as.numeric(end_score), 
+         year = as.character(year)) %>% 
+    group_by(year, competition, id) %>% 
+  mutate(first_end_winner = ifelse(x1[1]>x1[2], country[1], 
+                                   ifelse(x1[2]>x1[1], country[2], "tie")),
+         ind_first_end_winner = ifelse(first_end_winner == country, T, F)) %>% 
+  mutate(game_winner = 
+           ifelse(end_score[1] > end_score[2], country[1], 
+                              ifelse(end_score[2]>end_score[1], country[2], "tie")), 
+         ind_game_winner = ifelse(game_winner == country, T, F)) %>% 
+  mutate(first_end_first_game = ifelse(game_winner == first_end_winner, T, F))
+  
+```
+```{r}
+proportion_olympics_quick <- all_years_olympics %>% 
+  group_by(year,team_group) %>% 
+  summarize(prop_double_win = mean(first_end_first_game, na.rm = T))
+
+ggplot(proportion_olympics_quick, aes(year, prop_double_win, fill = team_group, label = round(prop_double_win, digits = 3))) + 
+  geom_bar(stat = "identity", position = "dodge")+ 
+  theme_classic()+ 
+    labs(
+    title = "Proportion of Curling Games 'decided' in the First End", 
+    subtitle = "teams who made it to the final round are less affected 2018\nbut more affected in all other years", 
+    x = "type of game", 
+    y = "Proportion of total games won \nthat were won in the first end", 
+    fill = "Team in finals?"
+  )+ geom_text(position = position_dodge(width=1))
+
+```
+```{r}
+#next week I'll do confidence intervals I promise. 
+#also next week I want to instead of coercing first end ties to an NA, I want to proceed to the team who won the SECOND end. 
 ```
 
